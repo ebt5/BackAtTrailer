@@ -551,18 +551,9 @@ function updatePhysics(dt) {
   }
   if (timerRunning) timerElapsed += dt;
 
-  // Steering
+  // Steering — wheels stay where you leave them, only move when key held
   const steerDir = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
-  if (steerDir !== 0) {
-    cab.steerAngle += steerDir * STEER_SPEED * dt;
-  } else {
-    // Return to center
-    if (Math.abs(cab.steerAngle) < STEER_SPEED * dt) {
-      cab.steerAngle = 0;
-    } else {
-      cab.steerAngle -= Math.sign(cab.steerAngle) * STEER_SPEED * dt;
-    }
-  }
+  cab.steerAngle += steerDir * STEER_SPEED * dt;
   cab.steerAngle = Math.max(-MAX_STEER, Math.min(MAX_STEER, cab.steerAngle));
 
   // Throttle
@@ -846,10 +837,13 @@ function drawCab() {
   const rl = CAB_REAR_OVERHANG;
   const hw = CAB_WIDTH / 2;
 
+  // Total cab spans from -rl (hitch end) to frontAxle+fl (front bumper)
+  const totalCabLen = CAB_REAR_OVERHANG + CAB_WHEELBASE + CAB_FRONT_OH;
+
   // Main cab body — bold blue
   ctx.fillStyle = '#1155cc';
   ctx.beginPath();
-  ctx.roundRect(-rl, -hw, CAB_LENGTH, CAB_WIDTH, 3);
+  ctx.roundRect(-rl, -hw, totalCabLen, CAB_WIDTH, 4);
   ctx.fill();
 
   // Cab outline
@@ -857,32 +851,33 @@ function drawCab() {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Windshield — front third of cab
+  // Windshield — near front axle
+  const wsFront = CAB_WHEELBASE + fl - 2;
   ctx.fillStyle = '#aaccff';
-  ctx.fillRect(fl - 16, -hw + 4, 13, CAB_WIDTH - 8);
+  ctx.fillRect(wsFront - 16, -hw + 4, 14, CAB_WIDTH - 8);
 
-  // Grille — front face
+  // Grille — front bumper face
   ctx.fillStyle = '#0a2255';
-  ctx.fillRect(fl - 2, -hw + 2, 3, CAB_WIDTH - 4);
+  ctx.fillRect(CAB_WHEELBASE + fl - 1, -hw + 2, 3, CAB_WIDTH - 4);
 
-  // Exhaust stacks (two small rectangles at top)
+  // Exhaust stacks near rear of cab
   ctx.fillStyle = '#888';
-  ctx.fillRect(-rl + 10, -hw - 3, 4, 3);
-  ctx.fillRect(-rl + 18, -hw - 3, 4, 3);
+  ctx.fillRect(-rl + 8, -hw - 3, 4, 3);
+  ctx.fillRect(-rl + 16, -hw - 3, 4, 3);
 
-  // Front wheels (steerable — show angle with direction indicator)
-  const fx = fl - 8;
-  drawWheel(ctx, fx, -hw - 3, cab.steerAngle, 16, 7, true);
-  drawWheel(ctx, fx,  hw + 3, cab.steerAngle, 16, 7, true);
+  // Front wheels at front axle position (cab.x = rear axle, so front axle = +CAB_WHEELBASE)
+  const frontAxleX = CAB_WHEELBASE;
+  drawWheel(ctx, frontAxleX, -hw - 3, cab.steerAngle, 16, 7, true);
+  drawWheel(ctx, frontAxleX,  hw + 3, cab.steerAngle, 16, 7, true);
 
-  // Rear wheels (drive axle — fixed, no indicator)
-  drawWheel(ctx, -rl + 10, -hw - 3, 0, 16, 7, false);
-  drawWheel(ctx, -rl + 10,  hw + 3, 0, 16, 7, false);
+  // Rear wheels at origin (rear axle = cab.x pivot)
+  drawWheel(ctx, 0, -hw - 3, 0, 16, 7, false);
+  drawWheel(ctx, 0,  hw + 3, 0, 16, 7, false);
 
-  // Headlights
+  // Headlights at front bumper
   ctx.fillStyle = '#ffffaa';
-  ctx.fillRect(fl - 1, -hw + 3, 2, 4);
-  ctx.fillRect(fl - 1,  hw - 7, 2, 4);
+  ctx.fillRect(CAB_WHEELBASE + fl, -hw + 3, 3, 5);
+  ctx.fillRect(CAB_WHEELBASE + fl,  hw - 8, 3, 5);
 
   ctx.restore();
 }
