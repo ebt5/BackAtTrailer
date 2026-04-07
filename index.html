@@ -694,11 +694,12 @@ function checkWin() {
   if (levelState !== 'playing') return;
   const tgt = LEVELS[currentLevel].target;
 
-  // Win when trailer rear center crosses the goal line (moving into the zone)
-  const rx = trailer.rearX;
-  const ry = trailer.rearY;
+  // Win when cab rear axle crosses the goal line
+  // Cab rear axle is behind cab center by (CAB_REAR_OVERHANG - something) along cab angle
+  const rearAxleX = cab.x - Math.cos(cab.angle) * (CAB_REAR_OVERHANG - 2);
+  const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
 
-  if (rx >= tgt.x && rx <= tgt.x + tgt.w && ry >= tgt.y) {
+  if (rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y) {
     levelWon();
   }
 }
@@ -869,14 +870,14 @@ function drawCab() {
   ctx.fillRect(-rl + 10, -hw - 3, 4, 3);
   ctx.fillRect(-rl + 18, -hw - 3, 4, 3);
 
-  // Front wheels (steerable — rotate with steer angle)
+  // Front wheels (steerable — show angle with direction indicator)
   const fx = fl - 8;
-  drawWheel(ctx, fx, -hw - 2, cab.steerAngle, 12, 5);
-  drawWheel(ctx, fx,  hw + 2, cab.steerAngle, 12, 5);
+  drawWheel(ctx, fx, -hw - 3, cab.steerAngle, 16, 7, true);
+  drawWheel(ctx, fx,  hw + 3, cab.steerAngle, 16, 7, true);
 
-  // Rear wheels (drive axle — fixed)
-  drawWheel(ctx, -rl + 10, -hw - 2, 0, 12, 5);
-  drawWheel(ctx, -rl + 10,  hw + 2, 0, 12, 5);
+  // Rear wheels (drive axle — fixed, no indicator)
+  drawWheel(ctx, -rl + 10, -hw - 3, 0, 16, 7, false);
+  drawWheel(ctx, -rl + 10,  hw + 3, 0, 16, 7, false);
 
   // Headlights
   ctx.fillStyle = '#ffffaa';
@@ -886,14 +887,41 @@ function drawCab() {
   ctx.restore();
 }
 
-function drawWheel(ctx, lx, ly, angle, len, width) {
+function drawWheel(ctx, lx, ly, angle, len, width, isSteerable) {
   ctx.save();
   ctx.translate(lx, ly);
   ctx.rotate(angle);
-  ctx.fillStyle = '#111';
+
+  // Tire
+  ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(-len/2, -width/2, len, width);
-  ctx.fillStyle = '#333';
+  // Tread highlight
+  ctx.fillStyle = '#3a3a3a';
   ctx.fillRect(-len/2+1, -width/2+1, len-2, width-2);
+  // Hub
+  ctx.fillStyle = '#aaa';
+  ctx.beginPath();
+  ctx.arc(0, 0, width/3, 0, Math.PI*2);
+  ctx.fill();
+
+  // Steering direction indicator — bright yellow line showing wheel angle
+  if (isSteerable) {
+    ctx.strokeStyle = '#ffee00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(len/2 + 4, 0);
+    ctx.stroke();
+    // Arrow tip
+    ctx.fillStyle = '#ffee00';
+    ctx.beginPath();
+    ctx.moveTo(len/2 + 8, 0);
+    ctx.lineTo(len/2 + 3, -3);
+    ctx.lineTo(len/2 + 3,  3);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 
@@ -933,12 +961,11 @@ function drawTrailer() {
   ctx.fillRect(hl - 4, -hw + 7, 3, 4);
   ctx.fillRect(hl - 4, hw - 11, 3, 4);
 
-  // Rear wheels
-  ctx.fillStyle = '#111';
-  drawWheel(ctx, hl - 18, -hw - 1, 0, 12, 5);
-  drawWheel(ctx, hl - 18,  hw + 1, 0, 12, 5);
-  drawWheel(ctx, hl - 28, -hw - 1, 0, 12, 5);
-  drawWheel(ctx, hl - 28,  hw + 1, 0, 12, 5);
+  // Trailer rear wheels
+  drawWheel(ctx, hl - 18, -hw - 3, 0, 16, 7, false);
+  drawWheel(ctx, hl - 18,  hw + 3, 0, 16, 7, false);
+  drawWheel(ctx, hl - 30, -hw - 3, 0, 16, 7, false);
+  drawWheel(ctx, hl - 30,  hw + 3, 0, 16, 7, false);
 
   ctx.restore();
 }
