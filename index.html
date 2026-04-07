@@ -217,15 +217,15 @@ const CANVAS_H = 600;
 const HUD_H    = 74; // hud + btn row height in canvas coords
 
 // Truck dimensions (px)
-const CAB_LENGTH        = 52;   // total cab body length
-const CAB_WIDTH         = 22;
-const CAB_WHEELBASE     = 34;   // front-to-rear axle
-const CAB_REAR_OVERHANG = 14;   // rear axle to hitch
-const CAB_FRONT_OH      = 10;   // front overhang beyond front axle
+const CAB_LENGTH        = 64;   // total cab body length
+const CAB_WIDTH         = 28;
+const CAB_WHEELBASE     = 42;   // front-to-rear axle
+const CAB_REAR_OVERHANG = 16;   // rear axle to hitch
+const CAB_FRONT_OH      = 12;   // front overhang beyond front axle
 
-const TRAILER_LENGTH    = 90;
-const TRAILER_WIDTH     = 20;
-const TRAILER_REAR_OH   = 6;    // rear overhang past rear axle
+const TRAILER_LENGTH    = 110;
+const TRAILER_WIDTH     = 24;
+const TRAILER_REAR_OH   = 7;    // rear overhang past rear axle
 
 const MAX_STEER         = 0.55; // radians
 const STEER_SPEED       = 1.6;  // rad/s
@@ -694,16 +694,12 @@ function checkWin() {
   if (levelState !== 'playing') return;
   const tgt = LEVELS[currentLevel].target;
 
-  // Trailer rear center
+  // Win when trailer rear center crosses the goal line (moving into the zone)
   const rx = trailer.rearX;
   const ry = trailer.rearY;
 
-  if (rx >= tgt.x && rx <= tgt.x + tgt.w &&
-      ry >= tgt.y && ry <= tgt.y + tgt.h) {
-    // Need low speed to count as docked
-    if (Math.abs(cab.speed) < 30) {
-      levelWon();
-    }
+  if (rx >= tgt.x && rx <= tgt.x + tgt.w && ry >= tgt.y) {
+    levelWon();
   }
 }
 
@@ -811,23 +807,32 @@ function drawLaneMarkings() {
 }
 
 function drawTarget(tgt) {
-  // Filled semi-transparent
-  ctx.fillStyle = 'rgba(255, 220, 0, 0.12)';
+  // Goal zone — light fill to show the target area
+  ctx.fillStyle = 'rgba(255, 50, 50, 0.08)';
   ctx.fillRect(tgt.x, tgt.y, tgt.w, tgt.h);
 
-  // Dashed border
+  // Bold goal line across the top of the target zone
   ctx.save();
-  ctx.strokeStyle = '#ffe040';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 5]);
-  ctx.strokeRect(tgt.x, tgt.y, tgt.w, tgt.h);
-  ctx.setLineDash([]);
+  ctx.strokeStyle = '#ff3333';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(tgt.x, tgt.y);
+  ctx.lineTo(tgt.x + tgt.w, tgt.y);
+  ctx.stroke();
 
-  // Label
-  ctx.fillStyle = 'rgba(255,220,0,0.6)';
-  ctx.font = 'bold 11px "Courier New"';
+  // Chevron arrows pointing into the zone to make direction obvious
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 16px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('DOCK', tgt.x + tgt.w/2, tgt.y + tgt.h/2 + 4);
+  const midX = tgt.x + tgt.w / 2;
+  ctx.fillText('▼', midX - 20, tgt.y + 18);
+  ctx.fillText('▼', midX + 20, tgt.y + 18);
+
+  // BACK IN label
+  ctx.fillStyle = 'rgba(255, 80, 80, 0.8)';
+  ctx.font = 'bold 11px "Courier New"';
+  ctx.fillText('BACK IN ↓', midX, tgt.y - 6);
+
   ctx.restore();
 }
 
@@ -836,39 +841,47 @@ function drawCab() {
   ctx.translate(cab.x, cab.y);
   ctx.rotate(cab.angle);
 
-  const fl = CAB_FRONT_OH;   // front to center
-  const rl = CAB_REAR_OVERHANG; // rear to center
+  const fl = CAB_FRONT_OH;
+  const rl = CAB_REAR_OVERHANG;
   const hw = CAB_WIDTH / 2;
 
-  // Body
-  ctx.fillStyle = '#2255aa';
-  ctx.fillRect(-rl, -hw, CAB_LENGTH, CAB_WIDTH);
+  // Main cab body — bold blue
+  ctx.fillStyle = '#1155cc';
+  ctx.beginPath();
+  ctx.roundRect(-rl, -hw, CAB_LENGTH, CAB_WIDTH, 3);
+  ctx.fill();
 
-  // Windshield
-  ctx.fillStyle = '#88aadd';
-  ctx.fillRect(fl - 14, -hw + 3, 12, CAB_WIDTH - 6);
+  // Cab outline
+  ctx.strokeStyle = '#3377ee';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
-  // Cab roof detail
-  ctx.fillStyle = '#1a3e7a';
-  ctx.fillRect(-rl + 2, -hw + 2, CAB_LENGTH - 4, CAB_WIDTH - 4);
-  ctx.fillStyle = '#2255aa';
-  ctx.fillRect(-rl + 4, -hw + 4, CAB_LENGTH - 22, CAB_WIDTH - 8);
+  // Windshield — front third of cab
+  ctx.fillStyle = '#aaccff';
+  ctx.fillRect(fl - 16, -hw + 4, 13, CAB_WIDTH - 8);
 
-  // Wheels (visual only)
-  ctx.fillStyle = '#111';
-  // Front wheels (steerable)
-  const fx = fl - 6;
-  const steerOff = cab.steerAngle;
-  drawWheel(ctx, fx, -hw - 1, steerOff, 10, 5);
-  drawWheel(ctx, fx,  hw + 1, steerOff, 10, 5);
-  // Rear wheels
-  drawWheel(ctx, -rl + 8, -hw - 1, 0, 10, 5);
-  drawWheel(ctx, -rl + 8,  hw + 1, 0, 10, 5);
+  // Grille — front face
+  ctx.fillStyle = '#0a2255';
+  ctx.fillRect(fl - 2, -hw + 2, 3, CAB_WIDTH - 4);
+
+  // Exhaust stacks (two small rectangles at top)
+  ctx.fillStyle = '#888';
+  ctx.fillRect(-rl + 10, -hw - 3, 4, 3);
+  ctx.fillRect(-rl + 18, -hw - 3, 4, 3);
+
+  // Front wheels (steerable — rotate with steer angle)
+  const fx = fl - 8;
+  drawWheel(ctx, fx, -hw - 2, cab.steerAngle, 12, 5);
+  drawWheel(ctx, fx,  hw + 2, cab.steerAngle, 12, 5);
+
+  // Rear wheels (drive axle — fixed)
+  drawWheel(ctx, -rl + 10, -hw - 2, 0, 12, 5);
+  drawWheel(ctx, -rl + 10,  hw + 2, 0, 12, 5);
 
   // Headlights
-  ctx.fillStyle = '#ffff99';
-  ctx.fillRect(fl - 2, -hw + 2, 3, 4);
-  ctx.fillRect(fl - 2, hw - 6, 3, 4);
+  ctx.fillStyle = '#ffffaa';
+  ctx.fillRect(fl - 1, -hw + 3, 2, 4);
+  ctx.fillRect(fl - 1,  hw - 7, 2, 4);
 
   ctx.restore();
 }
