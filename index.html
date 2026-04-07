@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Back at Trailer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #fff;
+    overflow: hidden;
+  }
+  #gameWrapper {
+    position: relative;
+    width: 800px;
+    height: 600px;
+  }
+  canvas {
+    display: block;
+    background: #1a1a2e;
+    border: 2px solid #333355;
+  }
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 44px;
+    background: rgba(10,10,30,0.92);
+    border-bottom: 2px solid #333355;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    font-size: 13px;
+    color: #ccd;
+    z-index: 10;
+  }
+  #hud .hudCell { display: flex; flex-direction: column; align-items: center; min-width: 120px; }
+  #hud .hudLabel { font-size: 9px; color: #556; letter-spacing: 1px; text-transform: uppercase; }
+  #hud .hudVal { font-size: 16px; font-weight: bold; color: #eef; margin-top: 1px; }
+  #hud .hudVal.highlight { color: #ffe040; }
+  #btnRow {
+    position: absolute;
+    top: 44px; left: 0; right: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(10,10,30,0.7);
+    z-index: 10;
+  }
+  .gameBtn {
+    padding: 4px 14px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    border: 1px solid #445;
+    background: rgba(40,40,80,0.9);
+    color: #ccd;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .gameBtn:hover { background: rgba(60,60,120,0.9); }
+  .gameBtn.primary { border-color: #ffe040; color: #ffe040; }
+  /* Mobile controls */
+  #mobileControls {
+    position: absolute;
+    bottom: 8px; left: 0; right: 0;
+    display: none;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 12px;
+    z-index: 20;
+    pointer-events: none;
+  }
+  #mobileControls .dpad {
+    display: grid;
+    grid-template-columns: 44px 44px 44px;
+    grid-template-rows: 44px 44px 44px;
+    gap: 3px;
+    pointer-events: all;
+  }
+  .dpadBtn {
+    background: rgba(60,60,120,0.7);
+    border: 1px solid #445;
+    color: #aab;
+    font-size: 18px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dpadBtn:active { background: rgba(100,100,200,0.8); }
+  .dpadBtn.empty { background: transparent; border: none; }
+  #overlayScreen {
+    position: absolute;
+    top: 74px; left: 0; right: 0; bottom: 0;
+    background: rgba(10,10,30,0.88);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+  #overlayScreen h2 { font-size: 28px; color: #ffe040; margin-bottom: 10px; }
+  #overlayScreen p { font-size: 14px; color: #99a; margin-bottom: 6px; }
+  #overlayScreen .bigTime { font-size: 42px; color: #fff; margin: 10px 0; }
+  #overlayScreen .overlayBtn {
+    margin-top: 12px;
+    padding: 10px 30px;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+    border: 2px solid #ffe040;
+    background: rgba(60,60,30,0.6);
+    color: #ffe040;
+    cursor: pointer;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  #overlayScreen .overlayBtn:hover { background: rgba(100,100,40,0.8); }
+  #overlayScreen .overlayBtn.secondary {
+    border-color: #556;
+    color: #aab;
+    background: rgba(40,40,80,0.6);
+    margin-top: 6px;
+  }
+  #levelTitle {
+    position: absolute;
+    top: 74px; left: 0; right: 0;
+    text-align: center;
+    padding-top: 8px;
+    font-size: 11px;
+    color: #667;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  @media (max-width: 820px) {
+    #gameWrapper { width: 100vw; height: calc(100vw * 0.75); }
+    canvas { width: 100%; height: 100%; }
+    #mobileControls { display: flex; }
+  }
+</style>
+</head>
+<body>
+<div id="gameWrapper">
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <div id="hud">
+    <div class="hudCell">
+      <span class="hudLabel">Level</span>
+      <span class="hudVal highlight" id="hudLevel">1 / 10</span>
+    </div>
+    <div class="hudCell">
+      <span class="hudLabel">Time</span>
+      <span class="hudVal" id="hudTime">0.00</span>
+    </div>
+    <div class="hudCell">
+      <span class="hudLabel">Best</span>
+      <span class="hudVal" id="hudBest">--</span>
+    </div>
+  </div>
+
+  <div id="btnRow">
+    <button class="gameBtn primary" id="btnNextLevel" style="display:none">Next Level ▶</button>
+    <button class="gameBtn" id="btnRetry">↺ Retry</button>
+    <span style="font-size:10px;color:#445;margin-left:8px">Arrow keys to drive · Space to reset</span>
+  </div>
+
+  <div id="levelTitle"></div>
+
+  <div id="overlayScreen" style="display:none">
+    <h2 id="overlayTitle">Level Complete!</h2>
+    <p id="overlayMsg">You docked the trailer.</p>
+    <div class="bigTime" id="overlayTime"></div>
+    <button class="overlayBtn" id="overlayNext">Next Level ▶</button>
+    <button class="overlayBtn secondary" id="overlayRetry">↺ Retry This Level</button>
+  </div>
+
+  <div id="mobileControls">
+    <div class="dpad">
+      <div class="dpadBtn empty"></div>
+      <div class="dpadBtn" id="mbUp">▲</div>
+      <div class="dpadBtn empty"></div>
+      <div class="dpadBtn" id="mbLeft">◀</div>
+      <div class="dpadBtn empty"></div>
+      <div class="dpadBtn" id="mbRight">▶</div>
+      <div class="dpadBtn empty"></div>
+      <div class="dpadBtn" id="mbDown">▼</div>
+      <div class="dpadBtn empty"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;pointer-events:all">
+      <div class="dpadBtn" id="mbReset" style="width:70px;height:44px;font-size:12px">RESET</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const CANVAS_W = 800;
+const CANVAS_H = 600;
+const HUD_H    = 74; // hud + btn row height in canvas coords
+
+// Truck dimensions (px)
+const CAB_LENGTH        = 52;   // total cab body length
+const CAB_WIDTH         = 22;
+const CAB_WHEELBASE     = 34;   // front-to-rear axle
+const CAB_REAR_OVERHANG = 14;   // rear axle to hitch
+const CAB_FRONT_OH      = 10;   // front overhang beyond front axle
+
+const TRAILER_LENGTH    = 90;
+const TRAILER_WIDTH     = 20;
+const TRAILER_REAR_OH   = 6;    // rear overhang past rear axle
+
+const MAX_STEER         = 0.55; // radians
+const STEER_SPEED       = 1.6;  // rad/s
+const MAX_SPEED         = 90;   // px/s
+const ACCEL             = 70;
+const BRAKE_DECEL       = 120;
+const DRAG              = 40;
+
+// ─── LEVEL DEFINITIONS ───────────────────────────────────────────────────────
+// spawn: {x, y, cabAngle, trailerAngle} (angles in radians, 0=right, PI=left)
+// target: {x, y, w, h} — win when trailer rear center is inside
+// walls: array of {x,y,w,h} axis-aligned rects
+// cones: array of {x,y,r} circles (treated as small square obstacles)
+
+const LEVELS = [
+  // 1 — Open lot, wide target (tutorial)
+  {
+    title: "Open Lot — Tutorial",
+    spawn: { x: 400, y: 200, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 320, y: 460, w: 120, h: 50 },
+    walls: [
+      // boundary
+      {x:0,   y:HUD_H, w:10,       h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10,       h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+    ],
+    cones: []
+  },
+  // 2 — Straight alley
+  {
+    title: "Straight Alley",
+    spawn: { x: 400, y: 200, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 360, y: 488, w: 80, h: 40 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // alley walls
+      {x:300, y:300, w:16, h:280},
+      {x:484, y:300, w:16, h:280},
+    ],
+    cones: []
+  },
+  // 3 — Left-turn dock
+  {
+    title: "Left Turn Dock",
+    spawn: { x: 580, y: 220, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 90, y: 440, w: 90, h: 50 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // dock wall on left
+      {x:180, y:360, w:16, h:230},
+      {x:0,   y:360, w:180, h:16},
+      // partial top wall
+      {x:350, y:HUD_H, w:16, h:250},
+    ],
+    cones: []
+  },
+  // 4 — Right-turn dock
+  {
+    title: "Right Turn Dock",
+    spawn: { x: 220, y: 220, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 620, y: 440, w: 90, h: 50 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // dock wall on right
+      {x:604, y:360, w:16, h:230},
+      {x:620, y:360, w:170, h:16},
+      // partial top wall
+      {x:434, y:HUD_H, w:16, h:250},
+    ],
+    cones: []
+  },
+  // 5 — 90° dock with cone
+  {
+    title: "90° Dock with Cone",
+    spawn: { x: 180, y: 200, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 680, y: 430, w: 80, h: 60 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      {x:580, y:340, w:16, h:250},
+      {x:596, y:340, w:204, h:16},
+    ],
+    cones: [{x:440, y:340, r:14}, {x:440, y:440, r:14}]
+  },
+  // 6 — Loading bay with parked cars
+  {
+    title: "Loading Bay",
+    spawn: { x: 400, y: 190, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 350, y: 490, w: 100, h: 40 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // alley walls
+      {x:270, y:350, w:16, h:240},
+      {x:514, y:350, w:16, h:240},
+      // parked cars flanking
+      {x:100, y:390, w:60, h:28},
+      {x:640, y:390, w:60, h:28},
+      // top partial walls
+      {x:100, y:HUD_H, w:16, h:200},
+      {x:684, y:HUD_H, w:16, h:200},
+    ],
+    cones: []
+  },
+  // 7 — S-curve approach
+  {
+    title: "S-Curve Approach",
+    spawn: { x: 400, y: 165, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 330, y: 490, w: 100, h: 44 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // S shape left side
+      {x:200, y:HUD_H,  w:16, h:180},
+      {x:216, y:250,    w:200, h:16},
+      {x:200, y:266,    w:16, h:180},
+      // S shape right side
+      {x:584, y:260,    w:16, h:180},
+      {x:384, y:260,    w:200, h:16},
+      {x:584, y:HUD_H,  w:16, h:180},
+      // dock walls at bottom
+      {x:310, y:400,    w:16, h:190},
+      {x:474, y:400,    w:16, h:190},
+    ],
+    cones: []
+  },
+  // 8 — Narrow gate
+  {
+    title: "Narrow Gate",
+    spawn: { x: 400, y: 165, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 345, y: 490, w: 110, h: 44 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // gate walls
+      {x:10,  y:300, w:330, h:16},
+      {x:460, y:300, w:330, h:16},
+      // dock walls below gate
+      {x:320, y:390, w:16, h:200},
+      {x:464, y:390, w:16, h:200},
+    ],
+    cones: []
+  },
+  // 9 — Multi-obstacle course
+  {
+    title: "Multi-Obstacle Course",
+    spawn: { x: 150, y: 180, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 660, y: 470, w: 90, h: 50 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // barriers
+      {x:280, y:HUD_H, w:16, h:200},
+      {x:440, y:250,   w:16, h:200},
+      {x:160, y:380,   w:200, h:16},
+      {x:580, y:340,   w:16, h:240},
+      {x:596, y:340,   w:194, h:16},
+    ],
+    cones: [
+      {x:350, y:320, r:12},
+      {x:500, y:200, r:12},
+      {x:200, y:470, r:12},
+      {x:300, y:470, r:12},
+    ]
+  },
+  // 10 — Expert tight dock
+  {
+    title: "Expert Tight Dock",
+    spawn: { x: 200, y: 185, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 668, y: 460, w: 68, h: 40 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // top divider
+      {x:380, y:HUD_H, w:16, h:190},
+      // middle corridor walls
+      {x:200, y:280,   w:16, h:220},
+      {x:380, y:280,   w:16, h:120},
+      {x:216, y:280,   w:164, h:16},
+      // right section
+      {x:530, y:HUD_H, w:16, h:160},
+      {x:620, y:340,   w:16, h:250},
+      {x:750, y:340,   w:16, h:250},
+      {x:636, y:340,   w:114, h:16},
+    ],
+    cones: [
+      {x:460, y:200, r:12},
+      {x:460, y:400, r:12},
+      {x:310, y:450, r:12},
+    ]
+  }
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+
+const keys = { up: false, down: false, left: false, right: false };
+let currentLevel   = 0;
+let levelState     = 'playing'; // 'playing' | 'won'
+let timerRunning   = false;
+let timerElapsed   = 0;
+let lastTimestamp  = null;
+let bestTimes      = JSON.parse(localStorage.getItem('batBestTimes') || '{}');
+
+// Truck state
+let cab = {
+  x: 0, y: 0,
+  angle: 0,
+  speed: 0,
+  steerAngle: 0
+};
+let trailer = {
+  rearX: 0, rearY: 0,
+  angle: 0
+};
+let hitchX = 0, hitchY = 0;
+
+// ─── SETUP / LEVEL LOADING ────────────────────────────────────────────────────
+function loadLevel(idx) {
+  currentLevel = idx;
+  levelState   = 'playing';
+  timerRunning = false;
+  timerElapsed = 0;
+  lastTimestamp = null;
+
+  const lvl = LEVELS[idx];
+  const sp  = lvl.spawn;
+
+  cab.x         = sp.x;
+  cab.y         = sp.y;
+  cab.angle     = sp.cabAngle;
+  cab.speed     = 0;
+  cab.steerAngle= 0;
+
+  trailer.angle = sp.trailerAngle;
+  // Position trailer rear behind cab
+  hitchX = cab.x - Math.cos(cab.angle) * CAB_REAR_OVERHANG;
+  hitchY = cab.y - Math.sin(cab.angle) * CAB_REAR_OVERHANG;
+  trailer.rearX = hitchX - Math.cos(trailer.angle) * TRAILER_LENGTH;
+  trailer.rearY = hitchY - Math.sin(trailer.angle) * TRAILER_LENGTH;
+
+  updateHUD();
+  document.getElementById('levelTitle').textContent = `Level ${idx+1}: ${lvl.title}`;
+  document.getElementById('overlayScreen').style.display = 'none';
+  document.getElementById('btnNextLevel').style.display = 'none';
+}
+
+function updateHUD() {
+  document.getElementById('hudLevel').textContent = `${currentLevel+1} / ${LEVELS.length}`;
+  const bk = `L${currentLevel}`;
+  const bt = bestTimes[bk];
+  document.getElementById('hudBest').textContent = bt ? fmtTime(bt) : '--';
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = (s % 60).toFixed(2).padStart(5,'0');
+  return m > 0 ? `${m}:${sec}` : `${sec}s`;
+}
+
+// ─── INPUT ────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp')    { keys.up    = true; e.preventDefault(); }
+  if (e.key === 'ArrowDown')  { keys.down  = true; e.preventDefault(); }
+  if (e.key === 'ArrowLeft')  { keys.left  = true; e.preventDefault(); }
+  if (e.key === 'ArrowRight') { keys.right = true; e.preventDefault(); }
+  if (e.key === ' ') { loadLevel(currentLevel); e.preventDefault(); }
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowUp')    keys.up    = false;
+  if (e.key === 'ArrowDown')  keys.down  = false;
+  if (e.key === 'ArrowLeft')  keys.left  = false;
+  if (e.key === 'ArrowRight') keys.right = false;
+});
+
+function bindMobileBtn(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; }, {passive:false});
+  el.addEventListener('touchend',   e => { e.preventDefault(); keys[key] = false; });
+  el.addEventListener('mousedown',  e => { keys[key] = true; });
+  el.addEventListener('mouseup',    e => { keys[key] = false; });
+}
+bindMobileBtn('mbUp',   'up');
+bindMobileBtn('mbDown', 'down');
+bindMobileBtn('mbLeft', 'left');
+bindMobileBtn('mbRight','right');
+document.getElementById('mbReset').addEventListener('click', () => loadLevel(currentLevel));
+
+document.getElementById('btnRetry').addEventListener('click', () => loadLevel(currentLevel));
+document.getElementById('btnNextLevel').addEventListener('click', advanceLevel);
+document.getElementById('overlayNext').addEventListener('click', advanceLevel);
+document.getElementById('overlayRetry').addEventListener('click', () => loadLevel(currentLevel));
+
+function advanceLevel() {
+  const next = currentLevel + 1;
+  if (next < LEVELS.length) {
+    loadLevel(next);
+  } else {
+    showAllComplete();
+  }
+}
+
+// ─── PHYSICS ─────────────────────────────────────────────────────────────────
+function updatePhysics(dt) {
+  if (levelState !== 'playing') return;
+
+  // Start timer on first input
+  if ((keys.up || keys.down || keys.left || keys.right) && !timerRunning) {
+    timerRunning = true;
+  }
+  if (timerRunning) timerElapsed += dt;
+
+  // Steering
+  const steerDir = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
+  if (steerDir !== 0) {
+    cab.steerAngle += steerDir * STEER_SPEED * dt;
+  } else {
+    // Return to center
+    if (Math.abs(cab.steerAngle) < STEER_SPEED * dt) {
+      cab.steerAngle = 0;
+    } else {
+      cab.steerAngle -= Math.sign(cab.steerAngle) * STEER_SPEED * dt;
+    }
+  }
+  cab.steerAngle = Math.max(-MAX_STEER, Math.min(MAX_STEER, cab.steerAngle));
+
+  // Throttle
+  const throttle = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+  if (throttle > 0) {
+    cab.speed += ACCEL * dt;
+  } else if (throttle < 0) {
+    cab.speed -= ACCEL * dt;
+  } else {
+    // drag
+    const drag = DRAG * dt;
+    if (Math.abs(cab.speed) <= drag) cab.speed = 0;
+    else cab.speed -= Math.sign(cab.speed) * drag;
+  }
+  // Brake when changing direction
+  if (throttle !== 0 && Math.sign(throttle) !== Math.sign(cab.speed) && cab.speed !== 0) {
+    cab.speed -= Math.sign(cab.speed) * BRAKE_DECEL * dt;
+  }
+  cab.speed = Math.max(-MAX_SPEED * 0.7, Math.min(MAX_SPEED, cab.speed));
+
+  // Save old positions for collision rollback
+  const oldCabX = cab.x, oldCabY = cab.y, oldCabAngle = cab.angle;
+  const oldTrailerRearX = trailer.rearX, oldTrailerRearY = trailer.rearY;
+  const oldTrailerAngle = trailer.angle;
+  const oldHitchX = hitchX, oldHitchY = hitchY;
+
+  // Bicycle model: cab rotation
+  if (Math.abs(cab.steerAngle) > 0.001) {
+    cab.angle += (cab.speed / CAB_WHEELBASE) * Math.tan(cab.steerAngle) * dt;
+  }
+  cab.x += cab.speed * Math.cos(cab.angle) * dt;
+  cab.y += cab.speed * Math.sin(cab.angle) * dt;
+
+  // Hitch at rear of cab
+  hitchX = cab.x - Math.cos(cab.angle) * CAB_REAR_OVERHANG;
+  hitchY = cab.y - Math.sin(cab.angle) * CAB_REAR_OVERHANG;
+
+  // Trailer angle: hitch pulls trailer front
+  // trailerAngle points from trailer rear toward hitch
+  trailer.angle = Math.atan2(hitchY - trailer.rearY, hitchX - trailer.rearX);
+  trailer.rearX = hitchX - Math.cos(trailer.angle) * TRAILER_LENGTH;
+  trailer.rearY = hitchY - Math.sin(trailer.angle) * TRAILER_LENGTH;
+
+  // Collision detection
+  const walls = LEVELS[currentLevel].walls;
+  const cones = LEVELS[currentLevel].cones;
+  const allObstacles = [
+    ...walls,
+    ...cones.map(c => ({ x: c.x - c.r, y: c.y - c.r, w: c.r*2, h: c.r*2 }))
+  ];
+
+  let collided = false;
+  for (const obs of allObstacles) {
+    if (rotatedRectAABBOverlap(cabRect(), obs) || rotatedRectAABBOverlap(trailerRect(), obs)) {
+      collided = true;
+      break;
+    }
+  }
+
+  if (collided) {
+    // Rollback
+    cab.x = oldCabX; cab.y = oldCabY; cab.angle = oldCabAngle;
+    trailer.rearX = oldTrailerRearX; trailer.rearY = oldTrailerRearY;
+    trailer.angle = oldTrailerAngle;
+    hitchX = oldHitchX; hitchY = oldHitchY;
+    cab.speed *= -0.2; // slight bounce
+    if (Math.abs(cab.speed) < 1) cab.speed = 0;
+  }
+
+  // Win check
+  checkWin();
+}
+
+// ─── GEOMETRY HELPERS ─────────────────────────────────────────────────────────
+// Returns {cx,cy,w,h,angle} for the cab
+function cabRect() {
+  const cx = cab.x + Math.cos(cab.angle) * (CAB_FRONT_OH - CAB_REAR_OVERHANG) / 2;
+  const cy = cab.y + Math.sin(cab.angle) * (CAB_FRONT_OH - CAB_REAR_OVERHANG) / 2;
+  return { cx, cy, w: CAB_LENGTH, h: CAB_WIDTH, angle: cab.angle };
+}
+
+function trailerRect() {
+  const cx = trailer.rearX + Math.cos(trailer.angle) * TRAILER_LENGTH / 2;
+  const cy = trailer.rearY + Math.sin(trailer.angle) * TRAILER_LENGTH / 2;
+  return { cx, cy, w: TRAILER_LENGTH, h: TRAILER_WIDTH, angle: trailer.angle };
+}
+
+// Get 4 corners of a rotated rect {cx,cy,w,h,angle}
+function rotatedRectCorners(r) {
+  const hw = r.w / 2, hh = r.h / 2;
+  const cos = Math.cos(r.angle), sin = Math.sin(r.angle);
+  return [
+    { x: r.cx + cos*hw - sin*hh,  y: r.cy + sin*hw + cos*hh  },
+    { x: r.cx - cos*hw - sin*hh,  y: r.cy - sin*hw + cos*hh  },
+    { x: r.cx - cos*hw + sin*hh,  y: r.cy - sin*hw - cos*hh  },
+    { x: r.cx + cos*hw + sin*hh,  y: r.cy + sin*hw - cos*hh  },
+  ];
+}
+
+// Check if rotated rect overlaps with AABB {x,y,w,h}
+function rotatedRectAABBOverlap(rr, aabb) {
+  // Check corners of rotated rect inside aabb
+  const corners = rotatedRectCorners(rr);
+  for (const c of corners) {
+    if (c.x >= aabb.x && c.x <= aabb.x + aabb.w &&
+        c.y >= aabb.y && c.y <= aabb.y + aabb.h) {
+      return true;
+    }
+  }
+  // Check corners of aabb inside rotated rect (inverse transform)
+  const aabbCorners = [
+    {x: aabb.x,          y: aabb.y},
+    {x: aabb.x+aabb.w,   y: aabb.y},
+    {x: aabb.x+aabb.w,   y: aabb.y+aabb.h},
+    {x: aabb.x,          y: aabb.y+aabb.h},
+  ];
+  const cos = Math.cos(-rr.angle), sin = Math.sin(-rr.angle);
+  const hw = rr.w/2, hh = rr.h/2;
+  for (const c of aabbCorners) {
+    const lx = (c.x - rr.cx)*cos - (c.y - rr.cy)*sin;
+    const ly = (c.x - rr.cx)*sin + (c.y - rr.cy)*cos;
+    if (Math.abs(lx) <= hw && Math.abs(ly) <= hh) return true;
+  }
+  return false;
+}
+
+// ─── WIN DETECTION ────────────────────────────────────────────────────────────
+function checkWin() {
+  if (levelState !== 'playing') return;
+  const tgt = LEVELS[currentLevel].target;
+
+  // Trailer rear center
+  const rx = trailer.rearX;
+  const ry = trailer.rearY;
+
+  if (rx >= tgt.x && rx <= tgt.x + tgt.w &&
+      ry >= tgt.y && ry <= tgt.y + tgt.h) {
+    // Need low speed to count as docked
+    if (Math.abs(cab.speed) < 30) {
+      levelWon();
+    }
+  }
+}
+
+function levelWon() {
+  levelState = 'won';
+  timerRunning = false;
+  cab.speed = 0;
+
+  const bk = `L${currentLevel}`;
+  if (!bestTimes[bk] || timerElapsed < bestTimes[bk]) {
+    bestTimes[bk] = timerElapsed;
+    localStorage.setItem('batBestTimes', JSON.stringify(bestTimes));
+  }
+
+  updateHUD();
+
+  const overlay = document.getElementById('overlayScreen');
+  document.getElementById('overlayTitle').textContent = currentLevel === LEVELS.length-1 ? '🏆 All Levels Complete!' : 'Docked! ✓';
+  document.getElementById('overlayMsg').textContent = `Level ${currentLevel+1}: ${LEVELS[currentLevel].title}`;
+  document.getElementById('overlayTime').textContent = fmtTime(timerElapsed);
+  document.getElementById('overlayNext').style.display = currentLevel < LEVELS.length-1 ? '' : 'none';
+  overlay.style.display = 'flex';
+
+  document.getElementById('btnNextLevel').style.display = currentLevel < LEVELS.length-1 ? '' : 'none';
+}
+
+function showAllComplete() {
+  const overlay = document.getElementById('overlayScreen');
+  document.getElementById('overlayTitle').textContent = 'Game Complete!';
+  document.getElementById('overlayMsg').textContent = 'You mastered all 10 levels!';
+  document.getElementById('overlayTime').textContent = '';
+  document.getElementById('overlayNext').style.display = 'none';
+  overlay.style.display = 'flex';
+}
+
+// ─── RENDERING ────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const lvl = LEVELS[currentLevel];
+
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, HUD_H, CANVAS_W, CANVAS_H - HUD_H);
+
+  // Dashed lane markings
+  drawLaneMarkings();
+
+  // Target zone
+  drawTarget(lvl.target);
+
+  // Walls
+  ctx.fillStyle = '#7a2233';
+  for (const w of lvl.walls) {
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    // highlight edge
+    ctx.strokeStyle = '#aa3344';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(w.x, w.y, w.w, w.h);
+  }
+
+  // Cones
+  for (const c of lvl.cones) {
+    drawCone(c.x, c.y, c.r);
+  }
+
+  // Trailer
+  drawTrailer();
+
+  // Cab
+  drawCab();
+
+  // Hitch
+  ctx.beginPath();
+  ctx.arc(hitchX, hitchY, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#222';
+  ctx.fill();
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Timer display
+  if (timerRunning || timerElapsed > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = 'bold 14px "Courier New"';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmtTime(timerElapsed), CANVAS_W - 15, CANVAS_H - 10);
+  }
+}
+
+function drawLaneMarkings() {
+  ctx.save();
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([20, 20]);
+  // Horizontal dashes
+  for (let y = HUD_H + 40; y < CANVAS_H - 10; y += 80) {
+    ctx.beginPath();
+    ctx.moveTo(10, y);
+    ctx.lineTo(CANVAS_W-10, y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawTarget(tgt) {
+  // Filled semi-transparent
+  ctx.fillStyle = 'rgba(255, 220, 0, 0.12)';
+  ctx.fillRect(tgt.x, tgt.y, tgt.w, tgt.h);
+
+  // Dashed border
+  ctx.save();
+  ctx.strokeStyle = '#ffe040';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 5]);
+  ctx.strokeRect(tgt.x, tgt.y, tgt.w, tgt.h);
+  ctx.setLineDash([]);
+
+  // Label
+  ctx.fillStyle = 'rgba(255,220,0,0.6)';
+  ctx.font = 'bold 11px "Courier New"';
+  ctx.textAlign = 'center';
+  ctx.fillText('DOCK', tgt.x + tgt.w/2, tgt.y + tgt.h/2 + 4);
+  ctx.restore();
+}
+
+function drawCab() {
+  ctx.save();
+  ctx.translate(cab.x, cab.y);
+  ctx.rotate(cab.angle);
+
+  const fl = CAB_FRONT_OH;   // front to center
+  const rl = CAB_REAR_OVERHANG; // rear to center
+  const hw = CAB_WIDTH / 2;
+
+  // Body
+  ctx.fillStyle = '#2255aa';
+  ctx.fillRect(-rl, -hw, CAB_LENGTH, CAB_WIDTH);
+
+  // Windshield
+  ctx.fillStyle = '#88aadd';
+  ctx.fillRect(fl - 14, -hw + 3, 12, CAB_WIDTH - 6);
+
+  // Cab roof detail
+  ctx.fillStyle = '#1a3e7a';
+  ctx.fillRect(-rl + 2, -hw + 2, CAB_LENGTH - 4, CAB_WIDTH - 4);
+  ctx.fillStyle = '#2255aa';
+  ctx.fillRect(-rl + 4, -hw + 4, CAB_LENGTH - 22, CAB_WIDTH - 8);
+
+  // Wheels (visual only)
+  ctx.fillStyle = '#111';
+  // Front wheels (steerable)
+  const fx = fl - 6;
+  const steerOff = cab.steerAngle;
+  drawWheel(ctx, fx, -hw - 1, steerOff, 10, 5);
+  drawWheel(ctx, fx,  hw + 1, steerOff, 10, 5);
+  // Rear wheels
+  drawWheel(ctx, -rl + 8, -hw - 1, 0, 10, 5);
+  drawWheel(ctx, -rl + 8,  hw + 1, 0, 10, 5);
+
+  // Headlights
+  ctx.fillStyle = '#ffff99';
+  ctx.fillRect(fl - 2, -hw + 2, 3, 4);
+  ctx.fillRect(fl - 2, hw - 6, 3, 4);
+
+  ctx.restore();
+}
+
+function drawWheel(ctx, lx, ly, angle, len, width) {
+  ctx.save();
+  ctx.translate(lx, ly);
+  ctx.rotate(angle);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-len/2, -width/2, len, width);
+  ctx.fillStyle = '#333';
+  ctx.fillRect(-len/2+1, -width/2+1, len-2, width-2);
+  ctx.restore();
+}
+
+function drawTrailer() {
+  ctx.save();
+  const cx = trailer.rearX + Math.cos(trailer.angle) * TRAILER_LENGTH / 2;
+  const cy = trailer.rearY + Math.sin(trailer.angle) * TRAILER_LENGTH / 2;
+  ctx.translate(cx, cy);
+  ctx.rotate(trailer.angle);
+
+  const hl = TRAILER_LENGTH / 2;
+  const hw = TRAILER_WIDTH / 2;
+
+  // Main body
+  ctx.fillStyle = '#666677';
+  ctx.fillRect(-hl, -hw, TRAILER_LENGTH, TRAILER_WIDTH);
+
+  // Panel lines
+  ctx.strokeStyle = '#888899';
+  ctx.lineWidth = 1;
+  for (let i = -hl + 18; i < hl - 5; i += 18) {
+    ctx.beginPath();
+    ctx.moveTo(i, -hw + 1);
+    ctx.lineTo(i, hw - 1);
+    ctx.stroke();
+  }
+
+  // Rear bumper
+  ctx.fillStyle = '#444455';
+  ctx.fillRect(hl - 5, -hw, 5, TRAILER_WIDTH);
+
+  // Reflectors
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(hl - 4, -hw + 2, 3, 4);
+  ctx.fillRect(hl - 4, hw - 6, 3, 4);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(hl - 4, -hw + 7, 3, 4);
+  ctx.fillRect(hl - 4, hw - 11, 3, 4);
+
+  // Rear wheels
+  ctx.fillStyle = '#111';
+  drawWheel(ctx, hl - 18, -hw - 1, 0, 12, 5);
+  drawWheel(ctx, hl - 18,  hw + 1, 0, 12, 5);
+  drawWheel(ctx, hl - 28, -hw - 1, 0, 12, 5);
+  drawWheel(ctx, hl - 28,  hw + 1, 0, 12, 5);
+
+  ctx.restore();
+}
+
+function drawCone(x, y, r) {
+  // Draw orange cone as circle with inner highlight
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = '#e85a00';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.5, 0, Math.PI*2);
+  ctx.fillStyle = '#ff9944';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.strokeStyle = '#cc4400';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// ─── GAME LOOP ────────────────────────────────────────────────────────────────
+function gameLoop(timestamp) {
+  if (lastTimestamp === null) lastTimestamp = timestamp;
+  const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05); // cap at 50ms
+  lastTimestamp = timestamp;
+
+  updatePhysics(dt);
+  draw();
+  updateTimerHUD();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function updateTimerHUD() {
+  document.getElementById('hudTime').textContent = fmtTime(timerElapsed);
+}
+
+// ─── START ────────────────────────────────────────────────────────────────────
+loadLevel(0);
+requestAnimationFrame(gameLoop);
+
+</script>
+</body>
+</html>
