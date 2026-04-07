@@ -956,11 +956,11 @@ function drawTrailer() {
   ctx.fillRect(hl - 4, -hw + 7, 3, 4);
   ctx.fillRect(hl - 4, hw - 11, 3, 4);
 
-  // Trailer rear wheels
-  drawWheel(ctx, hl - 18, -hw - 3, 0, 16, 7, false);
-  drawWheel(ctx, hl - 18,  hw + 3, 0, 16, 7, false);
-  drawWheel(ctx, hl - 30, -hw - 3, 0, 16, 7, false);
-  drawWheel(ctx, hl - 30,  hw + 3, 0, 16, 7, false);
+  // Trailer rear wheels — near the rear end (-hl direction)
+  drawWheel(ctx, -hl + 18, -hw - 3, 0, 16, 7, false);
+  drawWheel(ctx, -hl + 18,  hw + 3, 0, 16, 7, false);
+  drawWheel(ctx, -hl + 30, -hw - 3, 0, 16, 7, false);
+  drawWheel(ctx, -hl + 30,  hw + 3, 0, 16, 7, false);
 
   ctx.restore();
 }
