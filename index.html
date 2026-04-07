@@ -257,15 +257,15 @@ const LEVELS = [
   // 2 — Straight alley
   {
     title: "Straight Alley",
-    spawn: { x: 400, y: 200, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 360, y: 488, w: 80, h: 40 },
+    spawn: { x: 400, y: 155, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 340, y: 520, w: 120, h: 50 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // alley walls
-      {x:300, y:300, w:16, h:280},
-      {x:484, y:300, w:16, h:280},
+      // alley walls — start lower to give approach room
+      {x:300, y:380, w:16, h:220},
+      {x:504, y:380, w:16, h:220},
     ],
     cones: []
   },
