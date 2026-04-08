@@ -415,7 +415,7 @@ let timerElapsed   = 0;
 let dockDwellTime    = 0;
 let dockedLegit      = false; // true only if axle crossed boundary INTO zone while reversing
 let prevRearInZone   = false; // was the rear axle inside the zone last frame?
-const DWELL_REQUIRED = 0.6;
+const DWELL_REQUIRED = 1.0;
 let lastTimestamp  = null;
 let bestTimes      = JSON.parse(localStorage.getItem('batBestTimes') || '{}');
 
@@ -678,10 +678,12 @@ function checkWin(dt) {
   if (levelState !== 'playing') return;
   const tgt = LEVELS[currentLevel].target;
 
-  const rearAxleX = cab.x - Math.cos(cab.angle) * (CAB_REAR_OVERHANG - 2);
-  const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
+  // cab.x/y IS the cab rear axle (pivot point)
+  const rearAxleX = cab.x;
+  const rearAxleY = cab.y;
 
-  const inZone    = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40;
+  // Must be 60px past entry line AND within the zone width
+  const inZone    = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 60;
   const reversing = cab.speed < -2;
 
   // Detect the moment of crossing INTO the zone
@@ -857,15 +859,15 @@ function drawTarget(tgt) {
   ctx.lineWidth = 3;
   ctx.setLineDash([6, 4]);
   ctx.beginPath();
-  ctx.moveTo(tgt.x, tgt.y + 40);
-  ctx.lineTo(tgt.x + tgt.w, tgt.y + 40);
+  ctx.moveTo(tgt.x, tgt.y + 60);
+  ctx.lineTo(tgt.x + tgt.w, tgt.y + 60);
   ctx.stroke();
   ctx.setLineDash([]);
 
   // STOP label on finish line
   ctx.fillStyle = '#ffee00';
   ctx.font = 'bold 10px "Courier New"';
-  ctx.fillText('STOP HERE', midX, tgt.y + 38);
+  ctx.fillText('STOP HERE', midX, tgt.y + 58);
 
   ctx.restore();
 }
