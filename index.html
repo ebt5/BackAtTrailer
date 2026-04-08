@@ -412,6 +412,8 @@ let currentLevel   = 0;
 let levelState     = 'playing'; // 'playing' | 'won'
 let timerRunning   = false;
 let timerElapsed   = 0;
+let dockDwellTime  = 0;   // seconds rear axle has been inside the zone while reversing/stopped
+const DWELL_REQUIRED = 0.6; // must be inside for 0.6s after reversing in
 let lastTimestamp  = null;
 let bestTimes      = JSON.parse(localStorage.getItem('batBestTimes') || '{}');
 
@@ -434,6 +436,7 @@ function loadLevel(idx) {
   levelState   = 'playing';
   timerRunning = false;
   timerElapsed = 0;
+  dockDwellTime = 0;
   lastTimestamp = null;
   const sel = document.getElementById('levelSelect');
   if (sel) sel.value = idx;
@@ -610,7 +613,7 @@ function updatePhysics(dt) {
   }
 
   // Win check
-  checkWin();
+  checkWin(dt);
 }
 
 // ─── GEOMETRY HELPERS ─────────────────────────────────────────────────────────
@@ -667,20 +670,25 @@ function rotatedRectAABBOverlap(rr, aabb) {
 }
 
 // ─── WIN DETECTION ────────────────────────────────────────────────────────────
-function checkWin() {
+function checkWin(dt) {
   if (levelState !== 'playing') return;
   const tgt = LEVELS[currentLevel].target;
 
-  // Must be moving in reverse (negative speed = reversing)
-  if (cab.speed >= 0) return;
-
-  // Win when cab rear axle has passed well into the target zone
-  // Require rear axle to be at least 40px past the goal line
   const rearAxleX = cab.x - Math.cos(cab.angle) * (CAB_REAR_OVERHANG - 2);
   const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
 
-  if (rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40) {
-    levelWon();
+  const inZone = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40;
+  const reversing = cab.speed < 0;
+
+  if (inZone && reversing) {
+    // Accumulate dwell time while actively reversing inside zone
+    dockDwellTime += dt;
+    if (dockDwellTime >= DWELL_REQUIRED) {
+      levelWon();
+    }
+  } else {
+    // Reset dwell if out of zone or moving forward
+    dockDwellTime = 0;
   }
 }
 
@@ -768,6 +776,21 @@ function draw() {
     ctx.font = 'bold 14px "Courier New"';
     ctx.textAlign = 'right';
     ctx.fillText(fmtTime(timerElapsed), CANVAS_W - 15, CANVAS_H - 10);
+  }
+
+  // Docking progress arc — shows when reversing into zone
+  if (dockDwellTime > 0 && dockDwellTime < DWELL_REQUIRED) {
+    const cx = CANVAS_W / 2, cy = CANVAS_H - 28, r = 18;
+    const pct = dockDwellTime / DWELL_REQUIRED;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.fillStyle = '#00ff88';
+    ctx.font = 'bold 10px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.fillText('DOCK', cx, cy + 4);
   }
 }
 
