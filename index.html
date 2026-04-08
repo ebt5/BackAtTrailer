@@ -272,74 +272,62 @@ const LEVELS = [
     ],
     cones: []
   },
-  // 3 — Left-turn dock
+  // 3 — Left-turn dock: spawn right side, dock on far left bottom corner
   {
     title: "Left Turn Dock",
-    spawn: { x: 580, y: 220, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 90, y: 440, w: 90, h: 50 },
+    spawn: { x: 600, y: 300, cabAngle: Math.PI, trailerAngle: Math.PI },
+    target: { x: 60, y: 450, w: 100, h: 50 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // dock wall on left
-      {x:180, y:360, w:16, h:230},
-      {x:0,   y:360, w:180, h:16},
-      // partial top wall
-      {x:350, y:HUD_H, w:16, h:250},
+      // wall above dock opening (player approaches from right)
+      {x:160, y:HUD_H, w:16, h:360},
     ],
     cones: []
   },
-  // 4 — Right-turn dock
+  // 4 — Right-turn dock: spawn left side, dock on far right bottom corner
   {
     title: "Right Turn Dock",
-    spawn: { x: 220, y: 220, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 620, y: 440, w: 90, h: 50 },
+    spawn: { x: 200, y: 300, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 630, y: 450, w: 100, h: 50 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // dock wall on right
-      {x:604, y:360, w:16, h:230},
-      {x:620, y:360, w:170, h:16},
-      // partial top wall
-      {x:434, y:HUD_H, w:16, h:250},
+      // wall above dock opening (player approaches from left)
+      {x:624, y:HUD_H, w:16, h:360},
     ],
     cones: []
   },
-  // 5 — 90° dock with cone
+  // 5 — 90° dock with cones as guides
   {
-    title: "90° Dock with Cone",
-    spawn: { x: 180, y: 200, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 680, y: 430, w: 80, h: 60 },
+    title: "90° Dock with Cones",
+    spawn: { x: 160, y: 300, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 580, y: 450, w: 100, h: 50 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      {x:580, y:340, w:16, h:250},
-      {x:596, y:340, w:204, h:16},
+      // divider wall — player must go around then back in
+      {x:390, y:HUD_H, w:16, h:320},
     ],
-    cones: [{x:440, y:340, r:14}, {x:440, y:440, r:14}]
+    cones: [{x:500, y:380, r:12}, {x:500, y:440, r:12}, {x:560, y:380, r:12}]
   },
-  // 6 — Loading bay with parked cars
+  // 6 — Alley with parked obstacles on approach
   {
     title: "Loading Bay",
-    spawn: { x: 400, y: 190, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 350, y: 490, w: 100, h: 40 },
+    spawn: { x: 160, y: 300, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 580, y: 430, w: 100, h: 60 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // alley walls
-      {x:270, y:350, w:16, h:240},
-      {x:514, y:350, w:16, h:240},
-      // parked cars flanking
-      {x:100, y:390, w:60, h:28},
-      {x:640, y:390, w:60, h:28},
-      // top partial walls
-      {x:100, y:HUD_H, w:16, h:200},
-      {x:684, y:HUD_H, w:16, h:200},
+      // top and bottom of dock slot
+      {x:480, y:420, w:320, h:14},
+      {x:480, y:498, w:320, h:14},
     ],
-    cones: []
+    cones: [{x:300, y:260, r:12}, {x:300, y:360, r:12}, {x:420, y:310, r:12}]
   },
   // 7 — S-curve approach
   {
