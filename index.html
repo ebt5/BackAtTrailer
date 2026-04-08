@@ -674,11 +674,12 @@ function checkWin() {
   // Must be moving in reverse (negative speed = reversing)
   if (cab.speed >= 0) return;
 
-  // Win when cab rear axle crosses into the target zone
+  // Win when cab rear axle has passed well into the target zone
+  // Require rear axle to be at least 40px past the goal line
   const rearAxleX = cab.x - Math.cos(cab.angle) * (CAB_REAR_OVERHANG - 2);
   const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
 
-  if (rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y) {
+  if (rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40) {
     levelWon();
   }
 }
@@ -800,18 +801,28 @@ function drawTarget(tgt) {
   ctx.lineTo(tgt.x + tgt.w, tgt.y);
   ctx.stroke();
 
-  // Chevron arrows pointing into the zone to make direction obvious
-  ctx.fillStyle = '#ff4444';
-  ctx.font = 'bold 16px Arial';
-  ctx.textAlign = 'center';
   const midX = tgt.x + tgt.w / 2;
-  ctx.fillText('▼', midX - 20, tgt.y + 18);
-  ctx.fillText('▼', midX + 20, tgt.y + 18);
 
-  // BACK IN label
-  ctx.fillStyle = 'rgba(255, 80, 80, 0.8)';
+  // BACK IN label above entry line
+  ctx.fillStyle = 'rgba(255, 80, 80, 0.9)';
   ctx.font = 'bold 11px "Courier New"';
+  ctx.textAlign = 'center';
   ctx.fillText('BACK IN ↓', midX, tgt.y - 6);
+
+  // Inner finish line — where the win actually triggers (40px in)
+  ctx.strokeStyle = '#ffee00';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(tgt.x, tgt.y + 40);
+  ctx.lineTo(tgt.x + tgt.w, tgt.y + 40);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // STOP label on finish line
+  ctx.fillStyle = '#ffee00';
+  ctx.font = 'bold 10px "Courier New"';
+  ctx.fillText('STOP HERE', midX, tgt.y + 38);
 
   ctx.restore();
 }
