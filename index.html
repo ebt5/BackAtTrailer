@@ -247,7 +247,7 @@ const LEVELS = [
   {
     title: "Open Lot — Tutorial",
     spawn: { x: 400, y: 130, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 280, y: 340, w: 240, h: 120 },
+    target: { x: 280, y: 340, w: 240, h: 120, dir: "down" },
     walls: [
       // only side boundaries — no bottom wall so trailer can hang freely
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -259,7 +259,7 @@ const LEVELS = [
   {
     title: "Straight Alley",
     spawn: { x: 160, y: 340, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 550, y: 440, w: 100, h: 50 },
+    target: { x: 550, y: 440, w: 100, h: 50, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -275,7 +275,7 @@ const LEVELS = [
   {
     title: "Left Turn Dock",
     spawn: { x: 600, y: 300, cabAngle: Math.PI, trailerAngle: Math.PI },
-    target: { x: 60, y: 450, w: 100, h: 50 },
+    target: { x: 60, y: 450, w: 100, h: 50, dir: "right" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -289,7 +289,7 @@ const LEVELS = [
   {
     title: "Right Turn Dock",
     spawn: { x: 200, y: 300, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 630, y: 450, w: 100, h: 50 },
+    target: { x: 630, y: 450, w: 100, h: 50, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -303,7 +303,7 @@ const LEVELS = [
   {
     title: "90° Dock with Cones",
     spawn: { x: 160, y: 300, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 580, y: 450, w: 100, h: 50 },
+    target: { x: 580, y: 450, w: 100, h: 50, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -317,7 +317,7 @@ const LEVELS = [
   {
     title: "Loading Bay",
     spawn: { x: 160, y: 300, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 580, y: 430, w: 100, h: 60 },
+    target: { x: 580, y: 430, w: 100, h: 60, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -332,7 +332,7 @@ const LEVELS = [
   {
     title: "Offset Dock",
     spawn: { x: 160, y: 260, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 560, y: 370, w: 100, h: 60 },
+    target: { x: 560, y: 370, w: 100, h: 60, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -349,7 +349,7 @@ const LEVELS = [
   {
     title: "Cone Slalom Dock",
     spawn: { x: 160, y: 300, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 580, y: 430, w: 100, h: 60 },
+    target: { x: 580, y: 430, w: 100, h: 60, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -367,7 +367,7 @@ const LEVELS = [
   {
     title: "Double Turn",
     spawn: { x: 620, y: 200, cabAngle: Math.PI, trailerAngle: Math.PI },
-    target: { x: 60, y: 430, w: 110, h: 60 },
+    target: { x: 60, y: 430, w: 110, h: 60, dir: "right" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -383,7 +383,7 @@ const LEVELS = [
   {
     title: "Expert Dock",
     spawn: { x: 160, y: 240, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 590, y: 400, w: 80, h: 60 },
+    target: { x: 590, y: 400, w: 80, h: 60, dir: "left" },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
@@ -681,8 +681,22 @@ function checkWin(dt) {
   const rearAxleX = cab.x;
   const rearAxleY = cab.y;
 
-  // Must be 60px past entry line AND within the zone width
-  const inZone    = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 60;
+  // Direction-aware zone check
+  const dir = tgt.dir || 'down';
+  let inZone;
+  if (dir === 'down') {
+    // Backing in from top — check y depth
+    inZone = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 60;
+  } else if (dir === 'left') {
+    // Backing in from right — check x depth going left
+    inZone = rearAxleY >= tgt.y && rearAxleY <= tgt.y + tgt.h && rearAxleX <= tgt.x + tgt.w - 40;
+  } else if (dir === 'right') {
+    // Backing in from left — check x depth going right
+    inZone = rearAxleY >= tgt.y && rearAxleY <= tgt.y + tgt.h && rearAxleX >= tgt.x + 40;
+  } else {
+    // up
+    inZone = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY <= tgt.y + tgt.h - 60;
+  }
   const reversing = cab.speed < -2;
 
   // Detect the moment of crossing INTO the zone
@@ -832,41 +846,59 @@ function drawLaneMarkings() {
 }
 
 function drawTarget(tgt) {
-  // Goal zone — light fill to show the target area
+  const dir = tgt.dir || 'down';
+  ctx.save();
+
+  // Light fill
   ctx.fillStyle = 'rgba(255, 50, 50, 0.08)';
   ctx.fillRect(tgt.x, tgt.y, tgt.w, tgt.h);
 
-  // Bold goal line across the top of the target zone
-  ctx.save();
   ctx.strokeStyle = '#ff3333';
   ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(tgt.x, tgt.y);
-  ctx.lineTo(tgt.x + tgt.w, tgt.y);
-  ctx.stroke();
-
-  const midX = tgt.x + tgt.w / 2;
-
-  // BACK IN label above entry line
-  ctx.fillStyle = 'rgba(255, 80, 80, 0.9)';
+  ctx.fillStyle = 'rgba(255,80,80,0.9)';
   ctx.font = 'bold 11px "Courier New"';
   ctx.textAlign = 'center';
-  ctx.fillText('BACK IN ↓', midX, tgt.y - 6);
 
-  // Inner finish line — where the win actually triggers (40px in)
+  let entryX1, entryY1, entryX2, entryY2;
+  let stopX1, stopY1, stopX2, stopY2;
+  let labelX, labelY, labelText;
+  let stopLX, stopLY;
+
+  if (dir === 'down') {
+    entryX1 = tgt.x; entryY1 = tgt.y; entryX2 = tgt.x+tgt.w; entryY2 = tgt.y;
+    stopX1  = tgt.x; stopY1  = tgt.y+60; stopX2 = tgt.x+tgt.w; stopY2 = tgt.y+60;
+    labelX = tgt.x+tgt.w/2; labelY = tgt.y-6; labelText = 'BACK IN ↓';
+    stopLX = tgt.x+tgt.w/2; stopLY = tgt.y+58;
+  } else if (dir === 'left') {
+    entryX1 = tgt.x+tgt.w; entryY1 = tgt.y; entryX2 = tgt.x+tgt.w; entryY2 = tgt.y+tgt.h;
+    stopX1  = tgt.x+tgt.w-40; stopY1 = tgt.y; stopX2 = tgt.x+tgt.w-40; stopY2 = tgt.y+tgt.h;
+    labelX = tgt.x+tgt.w+4; labelY = tgt.y+tgt.h/2; labelText = '← IN';
+    stopLX = tgt.x+tgt.w-42; stopLY = tgt.y-6;
+  } else if (dir === 'right') {
+    entryX1 = tgt.x; entryY1 = tgt.y; entryX2 = tgt.x; entryY2 = tgt.y+tgt.h;
+    stopX1  = tgt.x+40; stopY1 = tgt.y; stopX2 = tgt.x+40; stopY2 = tgt.y+tgt.h;
+    labelX = tgt.x-4; labelY = tgt.y+tgt.h/2; labelText = 'IN →';
+    stopLX = tgt.x+42; stopLY = tgt.y-6;
+  } else {
+    entryX1 = tgt.x; entryY1 = tgt.y+tgt.h; entryX2 = tgt.x+tgt.w; entryY2 = tgt.y+tgt.h;
+    stopX1  = tgt.x; stopY1  = tgt.y+tgt.h-60; stopX2 = tgt.x+tgt.w; stopY2 = tgt.y+tgt.h-60;
+    labelX = tgt.x+tgt.w/2; labelY = tgt.y+tgt.h+12; labelText = 'BACK IN ↑';
+    stopLX = tgt.x+tgt.w/2; stopLY = tgt.y+tgt.h-62;
+  }
+
+  // Entry line (red)
+  ctx.beginPath(); ctx.moveTo(entryX1,entryY1); ctx.lineTo(entryX2,entryY2); ctx.stroke();
+  ctx.fillText(labelText, labelX, labelY);
+
+  // Stop line (yellow dashed)
   ctx.strokeStyle = '#ffee00';
   ctx.lineWidth = 3;
-  ctx.setLineDash([6, 4]);
-  ctx.beginPath();
-  ctx.moveTo(tgt.x, tgt.y + 60);
-  ctx.lineTo(tgt.x + tgt.w, tgt.y + 60);
-  ctx.stroke();
+  ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(stopX1,stopY1); ctx.lineTo(stopX2,stopY2); ctx.stroke();
   ctx.setLineDash([]);
-
-  // STOP label on finish line
   ctx.fillStyle = '#ffee00';
-  ctx.font = 'bold 10px "Courier New"';
-  ctx.fillText('STOP HERE', midX, tgt.y + 58);
+  ctx.font = 'bold 9px "Courier New"';
+  ctx.fillText('STOP', stopLX, stopLY);
 
   ctx.restore();
 }
