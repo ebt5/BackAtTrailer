@@ -412,8 +412,9 @@ let currentLevel   = 0;
 let levelState     = 'playing'; // 'playing' | 'won'
 let timerRunning   = false;
 let timerElapsed   = 0;
-let dockDwellTime  = 0;   // seconds rear axle has been inside the zone while reversing/stopped
-const DWELL_REQUIRED = 0.6; // must be inside for 0.6s after reversing in
+let dockDwellTime    = 0;     // seconds rear axle has been inside the zone while reversing
+let dockedLegit      = false; // true only if rear axle entered zone while reversing
+const DWELL_REQUIRED = 0.6;
 let lastTimestamp  = null;
 let bestTimes      = JSON.parse(localStorage.getItem('batBestTimes') || '{}');
 
@@ -435,8 +436,9 @@ function loadLevel(idx) {
   currentLevel = idx;
   levelState   = 'playing';
   timerRunning = false;
-  timerElapsed = 0;
+  timerElapsed  = 0;
   dockDwellTime = 0;
+  dockedLegit   = false;
   lastTimestamp = null;
   const sel = document.getElementById('levelSelect');
   if (sel) sel.value = idx;
@@ -677,17 +679,29 @@ function checkWin(dt) {
   const rearAxleX = cab.x - Math.cos(cab.angle) * (CAB_REAR_OVERHANG - 2);
   const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
 
-  const inZone = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40;
-  const reversing = cab.speed < 0;
+  const inZone    = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40;
+  const reversing = cab.speed < -2; // must be meaningfully reversing, not nearly stopped
 
-  if (inZone && reversing) {
-    // Accumulate dwell time while actively reversing inside zone
+  if (!inZone) {
+    // Outside zone — reset everything
+    dockDwellTime = 0;
+    dockedLegit   = false;
+    return;
+  }
+
+  // Inside zone — only count it if we entered while reversing
+  if (reversing && !dockedLegit) {
+    dockedLegit = true; // entered legitimately while backing in
+  }
+
+  if (inZone && reversing && dockedLegit) {
     dockDwellTime += dt;
     if (dockDwellTime >= DWELL_REQUIRED) {
       levelWon();
     }
-  } else {
-    // Reset dwell if out of zone or moving forward
+  } else if (!reversing) {
+    // Stopped or moved forward inside zone — lose legitimacy, must re-enter reversing
+    dockedLegit   = false;
     dockDwellTime = 0;
   }
 }
