@@ -412,8 +412,9 @@ let currentLevel   = 0;
 let levelState     = 'playing'; // 'playing' | 'won'
 let timerRunning   = false;
 let timerElapsed   = 0;
-let dockDwellTime    = 0;     // seconds rear axle has been inside the zone while reversing
-let dockedLegit      = false; // true only if rear axle entered zone while reversing
+let dockDwellTime    = 0;
+let dockedLegit      = false; // true only if axle crossed boundary INTO zone while reversing
+let prevRearInZone   = false; // was the rear axle inside the zone last frame?
 const DWELL_REQUIRED = 0.6;
 let lastTimestamp  = null;
 let bestTimes      = JSON.parse(localStorage.getItem('batBestTimes') || '{}');
@@ -436,9 +437,10 @@ function loadLevel(idx) {
   currentLevel = idx;
   levelState   = 'playing';
   timerRunning = false;
-  timerElapsed  = 0;
-  dockDwellTime = 0;
-  dockedLegit   = false;
+  timerElapsed     = 0;
+  dockDwellTime    = 0;
+  dockedLegit      = false;
+  prevRearInZone   = false;
   lastTimestamp = null;
   const sel = document.getElementById('levelSelect');
   if (sel) sel.value = idx;
@@ -680,18 +682,24 @@ function checkWin(dt) {
   const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
 
   const inZone    = rearAxleX >= tgt.x && rearAxleX <= tgt.x + tgt.w && rearAxleY >= tgt.y + 40;
-  const reversing = cab.speed < -2; // must be meaningfully reversing, not nearly stopped
+  const reversing = cab.speed < -2;
 
-  if (!inZone) {
-    // Outside zone — reset everything
+  // Detect the moment of crossing INTO the zone
+  const justEntered = inZone && !prevRearInZone;
+
+  if (justEntered && reversing) {
+    // Crossed the boundary this frame while reversing — legitimate entry
+    dockedLegit   = true;
     dockDwellTime = 0;
+  } else if (justEntered && !reversing) {
+    // Crossed the boundary while going forward — illegitimate, reset
     dockedLegit   = false;
-    return;
+    dockDwellTime = 0;
   }
 
-  // Inside zone — only count it if we entered while reversing
-  if (reversing && !dockedLegit) {
-    dockedLegit = true; // entered legitimately while backing in
+  if (!inZone) {
+    dockedLegit   = false;
+    dockDwellTime = 0;
   }
 
   if (inZone && reversing && dockedLegit) {
@@ -699,11 +707,9 @@ function checkWin(dt) {
     if (dockDwellTime >= DWELL_REQUIRED) {
       levelWon();
     }
-  } else if (!reversing) {
-    // Stopped or moved forward inside zone — lose legitimacy, must re-enter reversing
-    dockedLegit   = false;
-    dockDwellTime = 0;
   }
+
+  prevRearInZone = inZone;
 }
 
 function levelWon() {
