@@ -671,8 +671,10 @@ function checkWin() {
   if (levelState !== 'playing') return;
   const tgt = LEVELS[currentLevel].target;
 
-  // Win when cab rear axle crosses the goal line
-  // Cab rear axle is behind cab center by (CAB_REAR_OVERHANG - something) along cab angle
+  // Must be moving in reverse (negative speed = reversing)
+  if (cab.speed >= 0) return;
+
+  // Win when cab rear axle crosses into the target zone
   const rearAxleX = cab.x - Math.cos(cab.angle) * (CAB_REAR_OVERHANG - 2);
   const rearAxleY = cab.y - Math.sin(cab.angle) * (CAB_REAR_OVERHANG - 2);
 
