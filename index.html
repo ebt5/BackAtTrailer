@@ -246,13 +246,12 @@ const LEVELS = [
   // 1 — Open lot, wide target (tutorial)
   {
     title: "Open Lot — Tutorial",
-    spawn: { x: 400, y: 155, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 300, y: 420, w: 200, h: 80 },
+    spawn: { x: 400, y: 130, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
+    target: { x: 280, y: 340, w: 240, h: 120 },
     walls: [
-      // boundary
-      {x:0,   y:HUD_H, w:10,       h:CANVAS_H-HUD_H},
-      {x:790, y:HUD_H, w:10,       h:CANVAS_H-HUD_H},
-      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // only side boundaries — no bottom wall so trailer can hang freely
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
     ],
     cones: []
   },
