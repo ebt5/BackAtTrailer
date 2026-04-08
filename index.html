@@ -329,95 +329,76 @@ const LEVELS = [
     ],
     cones: [{x:300, y:260, r:12}, {x:300, y:360, r:12}, {x:420, y:310, r:12}]
   },
-  // 7 — S-curve approach
+  // 7 — Offset dock: approach from left, dock is right-center, divider forces real maneuver
   {
-    title: "S-Curve Approach",
-    spawn: { x: 400, y: 165, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 330, y: 490, w: 100, h: 44 },
+    title: "Offset Dock",
+    spawn: { x: 160, y: 260, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 560, y: 370, w: 100, h: 60 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // S shape left side
-      {x:200, y:HUD_H,  w:16, h:180},
-      {x:216, y:250,    w:200, h:16},
-      {x:200, y:266,    w:16, h:180},
-      // S shape right side
-      {x:584, y:260,    w:16, h:180},
-      {x:384, y:260,    w:200, h:16},
-      {x:584, y:HUD_H,  w:16, h:180},
-      // dock walls at bottom
-      {x:310, y:400,    w:16, h:190},
-      {x:474, y:400,    w:16, h:190},
+      // horizontal barrier mid-level — must go around top or bottom
+      {x:280, y:320, w:220, h:14},
+      // dock slot top/bottom walls
+      {x:460, y:360, w:14, h:160},
+      {x:670, y:360, w:14, h:160},
     ],
-    cones: []
+    cones: [{x:390, y:260, r:12}, {x:390, y:400, r:12}]
   },
-  // 8 — Narrow gate
+  // 8 — Tight alley: dock on right, two cone pillars to thread through
   {
-    title: "Narrow Gate",
-    spawn: { x: 400, y: 165, cabAngle: Math.PI/2, trailerAngle: Math.PI/2 },
-    target: { x: 345, y: 490, w: 110, h: 44 },
+    title: "Cone Slalom Dock",
+    spawn: { x: 160, y: 300, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 580, y: 430, w: 100, h: 60 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // gate walls
-      {x:10,  y:300, w:330, h:16},
-      {x:460, y:300, w:330, h:16},
-      // dock walls below gate
-      {x:320, y:390, w:16, h:200},
-      {x:464, y:390, w:16, h:200},
-    ],
-    cones: []
-  },
-  // 9 — Multi-obstacle course
-  {
-    title: "Multi-Obstacle Course",
-    spawn: { x: 150, y: 180, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 660, y: 470, w: 90, h: 50 },
-    walls: [
-      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
-      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
-      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // barriers
-      {x:280, y:HUD_H, w:16, h:200},
-      {x:440, y:250,   w:16, h:200},
-      {x:160, y:380,   w:200, h:16},
-      {x:580, y:340,   w:16, h:240},
-      {x:596, y:340,   w:194, h:16},
+      // dock slot top and bottom
+      {x:480, y:420, w:310, h:14},
+      {x:480, y:498, w:310, h:14},
     ],
     cones: [
-      {x:350, y:320, r:12},
-      {x:500, y:200, r:12},
-      {x:200, y:470, r:12},
-      {x:300, y:470, r:12},
+      {x:300, y:230, r:14}, {x:300, y:380, r:14},
+      {x:420, y:300, r:14}, {x:420, y:440, r:14},
     ]
   },
-  // 10 — Expert tight dock
+  // 9 — Double turn: dock bottom-left, spawn right, must make two turns
   {
-    title: "Expert Tight Dock",
-    spawn: { x: 200, y: 185, cabAngle: 0, trailerAngle: 0 },
-    target: { x: 668, y: 460, w: 68, h: 40 },
+    title: "Double Turn",
+    spawn: { x: 620, y: 200, cabAngle: Math.PI, trailerAngle: Math.PI },
+    target: { x: 60, y: 430, w: 110, h: 60 },
     walls: [
       {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
       {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
-      // top divider
-      {x:380, y:HUD_H, w:16, h:190},
-      // middle corridor walls
-      {x:200, y:280,   w:16, h:220},
-      {x:380, y:280,   w:16, h:120},
-      {x:216, y:280,   w:164, h:16},
-      // right section
-      {x:530, y:HUD_H, w:16, h:160},
-      {x:620, y:340,   w:16, h:250},
-      {x:750, y:340,   w:16, h:250},
-      {x:636, y:340,   w:114, h:16},
+      // vertical divider — forces left turn
+      {x:390, y:HUD_H, w:14, h:340},
+      // horizontal shelf — forces second adjustment
+      {x:10,  y:340, w:380, h:14},
+    ],
+    cones: [{x:500, y:380, r:12}, {x:250, y:200, r:12}]
+  },
+  // 10 — Expert: tight right-side dock with cone obstacles
+  {
+    title: "Expert Dock",
+    spawn: { x: 160, y: 240, cabAngle: 0, trailerAngle: 0 },
+    target: { x: 590, y: 400, w: 80, h: 60 },
+    walls: [
+      {x:0,   y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:790, y:HUD_H, w:10, h:CANVAS_H-HUD_H},
+      {x:0,   y:CANVAS_H-10, w:CANVAS_W, h:10},
+      // tight dock slot
+      {x:490, y:390, w:14, h:200},
+      {x:680, y:390, w:14, h:200},
+      // approach divider
+      {x:350, y:HUD_H, w:14, h:260},
     ],
     cones: [
-      {x:460, y:200, r:12},
-      {x:460, y:400, r:12},
-      {x:310, y:450, r:12},
+      {x:250, y:350, r:13}, {x:250, y:460, r:13},
+      {x:430, y:310, r:13}, {x:430, y:430, r:13},
+      {x:540, y:340, r:13},
     ]
   }
 ];
